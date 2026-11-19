@@ -1,0 +1,52 @@
+<Project>
+  <PropertyGroup>
+    <DeskMonitorPluginName Condition="'$(DeskMonitorPluginName)' == ''">$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)'))</DeskMonitorPluginName>
+    <DeskMonitorPluginManifest Condition="'$(DeskMonitorPluginManifest)' == ''">$(MSBuildProjectDirectory)\manifest.json</DeskMonitorPluginManifest>
+    <DeskMonitorPluginTargets>$(MSBuildThisFileFullPath)</DeskMonitorPluginTargets>
+  </PropertyGroup>
+  <UsingTask TaskName="PackDeskMonitorPlugin" TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Executable ParameterType="System.String" Required="true" />
+      <Manifest ParameterType="System.String" Required="true" />
+      <Output ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Text" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        byte[] metadata = File.ReadAllBytes(Manifest);
+        if (metadata.Length == 0 || metadata.Length > 16384)
+            throw new InvalidDataException("DeskMonitor manifest.json must be between 1 and 16384 bytes.");
+        string pending = Output + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            using (var input = File.OpenRead(Executable))
+            using (var destination = new FileStream(pending, FileMode.CreateNew))
+            using (var writer = new BinaryWriter(destination))
+            {
+                if (input.Length > 100 * 1024 * 1024)
+                    throw new InvalidDataException("DeskMonitor plugin executable exceeds 100 MiB.");
+                input.CopyTo(destination);
+                writer.Write(metadata);
+                writer.Write(metadata.Length);
+                writer.Write(Encoding.ASCII.GetBytes("DeskMonitorPlugin1"));
+            }
+            if (File.Exists(Output)) File.Replace(pending, Output, null);
+            else File.Move(pending, Output);
+        }
+        finally { File.Delete(pending); }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="CreateDeskMonitorPlugin" AfterTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'"
+          Inputs="$(TargetPath);$(DeskMonitorPluginManifest);$(DeskMonitorPluginTargets)"
+          Outputs="$(TargetDir)$(DeskMonitorPluginName).plugin">
+    <PackDeskMonitorPlugin Executable="$(TargetPath)" Manifest="$(DeskMonitorPluginManifest)"
+                           Output="$(TargetDir)$(DeskMonitorPluginName).plugin" />
+    <Message Importance="High" Text="DeskMonitor plugin -&gt; $(TargetDir)$(DeskMonitorPluginName).plugin" />
+  </Target>
+  <Target Name="CleanDeskMonitorPlugin" BeforeTargets="Clean">
+    <Delete Files="$(TargetDir)$(DeskMonitorPluginName).plugin" />
+  </Target>
+</Project>

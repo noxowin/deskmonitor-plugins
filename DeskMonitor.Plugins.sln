@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PeripheralBattery", "extensions\peripheral-battery\plugin.csproj", "{A73DA544-3423-4AF8-A323-4C62A059D31A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevicePower", "extensions\device-power\plugin.csproj", "{B6BD751E-7E8C-4BE8-A82A-E06B6A4C261D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DayProgress", "extensions\day-progress\plugin.csproj", "{26BDB535-287E-49DC-9B23-5BE0B954438A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A73DA544-3423-4AF8-A323-4C62A059D31A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A73DA544-3423-4AF8-A323-4C62A059D31A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A73DA544-3423-4AF8-A323-4C62A059D31A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A73DA544-3423-4AF8-A323-4C62A059D31A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6BD751E-7E8C-4BE8-A82A-E06B6A4C261D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6BD751E-7E8C-4BE8-A82A-E06B6A4C261D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6BD751E-7E8C-4BE8-A82A-E06B6A4C261D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6BD751E-7E8C-4BE8-A82A-E06B6A4C261D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26BDB535-287E-49DC-9B23-5BE0B954438A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26BDB535-287E-49DC-9B23-5BE0B954438A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26BDB535-287E-49DC-9B23-5BE0B954438A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26BDB535-287E-49DC-9B23-5BE0B954438A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

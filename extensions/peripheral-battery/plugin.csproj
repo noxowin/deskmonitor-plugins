@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <EmbeddedResource Include="vendor\*.zip;vendor\*.tar.gz"
+                      LogicalName="DeskMonitor.Battery.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
