@@ -1,0 +1,107 @@
+name: Sync and release Peripheral Battery
+
+on:
+  schedule:
+    - cron: '17 10 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: peripheral-battery-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: windows-2022
+    timeout-minutes: 15
+    outputs:
+      publish: ${{ steps.sync.outputs.publish }}
+      release_tag: ${{ steps.sync.outputs.release_tag }}
+      upstream_tag: ${{ steps.sync.outputs.upstream_tag }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check upstream and the plugin release
+        id: sync
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -X utf8 scripts/sync-peripheral-battery.py
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        if: steps.sync.outputs.publish == 'true'
+        with:
+          dotnet-version: 8.0.x
+      - name: Build and stage plugin
+        if: steps.sync.outputs.publish == 'true'
+        shell: pwsh
+        run: |
+          dotnet build extensions/peripheral-battery/plugin.csproj -c Release --nologo
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Path dist | Out-Null
+          Copy-Item extensions/peripheral-battery/bin/Release/net48/peripheral-battery.plugin dist/
+          git -c core.autocrlf=false add -A -- extensions/peripheral-battery/vendor extensions/peripheral-battery/manifest.json
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          git diff --cached --binary --output=dist/vendor.patch
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: steps.sync.outputs.publish == 'true'
+        with:
+          name: peripheral-battery
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Verify package and engine on Windows
+        if: steps.sync.outputs.publish == 'true'
+        run: python -X utf8 scripts/check-peripheral-battery.py
+
+  publish:
+    needs: build
+    if: needs.build.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: peripheral-battery
+          path: dist/
+      - name: Commit updated vendor bundle and publish the verified package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          RELEASE_TAG: ${{ needs.build.outputs.release_tag }}
+          UPSTREAM_TAG: ${{ needs.build.outputs.upstream_tag }}
+        run: |
+          remote_sha=$(git ls-remote --exit-code origin "refs/heads/$DEFAULT_BRANCH" | cut -f1)
+          if [[ "$remote_sha" != "$GITHUB_SHA" ]]; then
+            echo 'Default branch moved during the build. Rerun from its current head.' >&2
+            exit 1
+          fi
+          if [[ -s dist/vendor.patch ]]; then
+            git apply --index --include='extensions/peripheral-battery/vendor/*' \
+              --include='extensions/peripheral-battery/manifest.json' dist/vendor.patch
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m "Update bundled battery engine to $UPSTREAM_TAG"
+            git push origin "HEAD:refs/heads/$DEFAULT_BRANCH"
+          fi
+          revision=$(git rev-parse HEAD)
+          if ! git ls-remote --exit-code origin "refs/tags/$RELEASE_TAG"; then
+            git push origin "$revision:refs/tags/$RELEASE_TAG"
+          else
+            tagged_sha=$(git ls-remote origin "refs/tags/$RELEASE_TAG" | cut -f1)
+            [[ "$tagged_sha" == "$revision" ]]
+          fi
+          if current=$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft); then
+            if [[ "$current" == true ]]; then
+              gh release upload "$RELEASE_TAG" dist/peripheral-battery.plugin --clobber
+              gh release edit "$RELEASE_TAG" --draft=false
+            fi
+          else
+            gh release create "$RELEASE_TAG" dist/peripheral-battery.plugin --verify-tag \
+              --title "$RELEASE_TAG" --notes "Bundled battery engine: $UPSTREAM_TAG. Import peripheral-battery.plugin from DeskMonitor settings."
+          fi

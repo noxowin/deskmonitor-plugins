@@ -6,11 +6,11 @@
 
 | 插件 | 功能 | 下载 |
 | --- | --- | --- |
-| [外设电量](extensions/peripheral-battery) | 显示蓝牙和受支持的 2.4 GHz 外设电量，内置 Wireless Battery 采集引擎 | [0.2.1](https://github.com/noxowin/deskmonitor/releases/download/v0.3.0/peripheral-battery.plugin) |
+| [外设电量](extensions/peripheral-battery) | 显示蓝牙和受支持的 2.4 GHz 外设电量，内置 BatteryHub 采集引擎 | [最新发布](https://github.com/noxowin/deskmonitor-plugins/releases?q=peripheral-battery) |
 | [电脑电源](extensions/device-power) | 显示本机电池电量、充电状态和系统提供的剩余续航 | [0.1.0](https://github.com/noxowin/deskmonitor/releases/download/v0.3.0/device-power.plugin) |
 | [今日进度](extensions/day-progress) | 显示今天已经过去的比例和距离午夜的时间 | [0.1.0](https://github.com/noxowin/deskmonitor/releases/download/v0.3.0/day-progress.plugin) |
 
-在 DeskMonitor 的 **设置 → 插件 → 导入插件** 选择下载的 `.plugin`，也可放到 `DeskMonitor.exe` 同目录的 `plugins/`。表中的下载对应 DeskMonitor 首发版本。
+在 DeskMonitor 的 **设置 → 插件 → 导入插件** 选择下载的 `.plugin`，也可放到 `DeskMonitor.exe` 同目录的 `plugins/`。电脑电源和今日进度的下载来自 DeskMonitor 首发版本。
 
 ## 构建
 
@@ -27,4 +27,6 @@ dotnet build extensions/peripheral-battery/plugin.csproj -c Release
 
 插件版本以各自的 `manifest.json` 为准。插件独立发布时使用 `<插件名>-v<版本>` 标签，例如 `peripheral-battery-v0.2.1`。同一插件的清单 ID 应在升级时保持稳定。
 
-本仓库以 [DeskMonitor v0.3.0 的插件源码](https://github.com/noxowin/deskmonitor/tree/v0.3.0/extensions) 为起点。插件代码见 [Apache-2.0 许可证](LICENSE)。外设电量插件随包的 Wireless Battery 和 HeadsetControl 源码、许可与校验信息见[第三方组件说明](extensions/peripheral-battery/vendor/README.md)。
+[外设电量发布工作流](https://github.com/noxowin/deskmonitor-plugins/actions/workflows/peripheral-battery.yml) 每天检查 BatteryHub 作者站点的正式发布，也支持手动触发。发现新版本时会校验便携包、打包对应源码，并在 Windows 验证插件采集和源码导出后提交更新、发布 `.plugin`。
+
+本仓库以 [DeskMonitor v0.3.0 的插件源码](https://github.com/noxowin/deskmonitor/tree/v0.3.0/extensions) 为起点。插件代码见 [Apache-2.0 许可证](LICENSE)。外设电量插件随包的 BatteryHub 和 HeadsetControl 源码、许可与校验信息见[第三方组件说明](extensions/peripheral-battery/vendor/README.md)。

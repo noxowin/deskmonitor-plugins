@@ -2,30 +2,52 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Security.Cryptography;
+using MonitorPlugin;
 
 namespace PeripheralBatteryPlugin
 {
     internal static class BundledBatteryBackend
     {
-        private const string Portable = "WirelessBattery-1.0.8-portable.zip";
-        private const string WirelessBattery = "WirelessBattery.exe";
-        private const string HeadsetControl = "headsetcontrol.exe";
+        [DataContract]
+        private sealed class BundledFile
+        {
+            [DataMember(Name = "name", IsRequired = true)] public string Name { get; set; }
+            [DataMember(Name = "sha256", IsRequired = true)] public string Sha256 { get; set; }
+        }
+
+        [DataContract]
+        private sealed class VendorBundle
+        {
+            [DataMember(Name = "tag", IsRequired = true)] public string Tag { get; set; }
+            [DataMember(Name = "portable", IsRequired = true)] public BundledFile Portable { get; set; }
+            [DataMember(Name = "source", IsRequired = true)] public BundledFile Source { get; set; }
+            [DataMember(Name = "headsetSource", IsRequired = true)] public BundledFile HeadsetSource { get; set; }
+            [DataMember(Name = "engine", IsRequired = true)] public BundledFile Engine { get; set; }
+            [DataMember(Name = "headset", IsRequired = true)] public BundledFile Headset { get; set; }
+        }
+
+        private static readonly VendorBundle Bundle = ReadBundle();
+
+        private static VendorBundle ReadBundle()
+        {
+            using (var stream = Resource("upstream.json"))
+                return Protocol.Read<VendorBundle>(stream);
+        }
 
         public static string ResolveExecutable()
         {
-            string folder = Path.Combine(Program.DataDirectory, "wireless-battery-1.0.8");
-            const string batteryHash = "AD3BCA7AF7B56262E3A30E6F83AB1F9FC937B286926323FA6FFAE1A5D561DDBA";
-            const string headsetHash = "E371DA043710DDB8FC70AF77F2CCAD1CD03F8C6F49BA423E08764AD7A94A3C40";
+            string folder = Path.Combine(Program.DataDirectory, "wireless-battery-" + Bundle.Tag.Substring(1));
             Directory.CreateDirectory(folder);
-            string executable = Path.Combine(folder, WirelessBattery);
-            string headset = Path.Combine(folder, HeadsetControl);
-            if (!HasHash(executable, batteryHash) || !HasHash(headset, headsetHash))
+            string executable = Path.Combine(folder, Bundle.Engine.Name);
+            string headset = Path.Combine(folder, Bundle.Headset.Name);
+            if (!HasHash(executable, Bundle.Engine.Sha256) || !HasHash(headset, Bundle.Headset.Sha256))
             {
-                using (var archive = new ZipArchive(Resource(Portable), ZipArchiveMode.Read))
+                using (var archive = new ZipArchive(Resource(Bundle.Portable.Name), ZipArchiveMode.Read))
                 {
-                    Install(archive, HeadsetControl, headset, headsetHash);
-                    Install(archive, WirelessBattery, executable, batteryHash);
+                    Install(archive, Bundle.Headset.Name, headset, Bundle.Headset.Sha256);
+                    Install(archive, Bundle.Engine.Name, executable, Bundle.Engine.Sha256);
                 }
             }
             return executable;
@@ -60,7 +82,8 @@ namespace PeripheralBatteryPlugin
             {
                 using (var stream = File.OpenRead(file))
                 using (var sha = SHA256.Create())
-                    return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "") == expected;
+                    return string.Equals(BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", ""),
+                        expected, StringComparison.OrdinalIgnoreCase);
             }
             catch (FileNotFoundException) { return false; }
         }
@@ -68,7 +91,7 @@ namespace PeripheralBatteryPlugin
         public static void ExportThirdParty(string destination)
         {
             Directory.CreateDirectory(destination);
-            foreach (string name in new[] { Portable, "WirelessBattery-1.0.8-source.zip", "headsetcontrol-4.3.0.tar.gz" })
+            foreach (string name in new[] { Bundle.Portable.Name, Bundle.Source.Name, Bundle.HeadsetSource.Name })
                 using (var embedded = Resource(name))
                 using (var file = new FileStream(Path.Combine(destination, name), FileMode.CreateNew))
                     embedded.CopyTo(file);

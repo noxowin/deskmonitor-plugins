@@ -1,0 +1,24 @@
+{
+  "tag": "v1.1.2",
+  "commit": "64a5900096d4130134722afce617d18c031c7124",
+  "portable": {
+    "name": "BatteryHub-1.1.2-portable.zip",
+    "sha256": "d86d41aef9139fc565f318fa42b97748eddd5b494d038dda3dc550037638715c"
+  },
+  "source": {
+    "name": "BatteryHub-1.1.2-source.zip",
+    "sha256": "11beecc662cf9360c18888e96ae9e775d18f9a0d64be81890859e56917adb204"
+  },
+  "engine": {
+    "name": "BatteryHub.exe",
+    "sha256": "3cabfadd28b3b39f2c779f5dc843670d17b78a28ae734d6198c9aef29ddd4982"
+  },
+  "headset": {
+    "name": "headsetcontrol.exe",
+    "sha256": "e371da043710ddb8fc70af77f2ccad1cd03f8c6f49ba423e08764ad7a94a3c40"
+  },
+  "headsetSource": {
+    "name": "headsetcontrol-4.3.0.tar.gz",
+    "sha256": "918dcacf8aef347744b36b2d259d76880fa64b3869f0f8ef26b6576b873d28a7"
+  }
+}
