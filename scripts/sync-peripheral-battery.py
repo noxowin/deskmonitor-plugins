@@ -156,7 +156,11 @@ def sync():
     current = json.loads((VENDOR / "upstream.json").read_bytes())
     with urlopen(request(f"{UPSTREAM_API}/releases/latest"), timeout=30) as response:
         release = json.load(response)
-    if not release["draft"] and not release["prerelease"] and version_tuple(release["tag_name"]) > version_tuple(current["tag"]):
+    updated = (
+        not release["draft"] and not release["prerelease"]
+        and version_tuple(release["tag_name"]) > version_tuple(current["tag"])
+    )
+    if updated:
         with TemporaryDirectory() as directory:
             update_vendor(current, release, Path(directory))
         current = json.loads((VENDOR / "upstream.json").read_bytes())
@@ -174,7 +178,8 @@ def sync():
                                  for asset in existing["assets"]):
             raise ValueError(f"Published release {release_tag} is missing its plugin asset")
         with Path(output).open("a", encoding="utf-8") as stream:
-            stream.write(f"publish={str(not published).lower()}\nrelease_tag={release_tag}\nupstream_tag={current['tag']}\n")
+            stream.write(f"vendor_updated={str(updated).lower()}\npublish={str(not published).lower()}\n"
+                         f"release_tag={release_tag}\nupstream_tag={current['tag']}\n")
 
 
 if __name__ == "__main__":
